@@ -148,7 +148,7 @@ def atualizar_lista():
     for lanc in lancamentos:
         id_lanc, tipo, desc, valor = lanc
         tree.insert('', 'end', iid=id_lanc, values=(id_lanc, tipo, desc, f'R$ {valor:.2f}'))
-        if tipo == 'Entrada':
+        if tipo == 'ENTRADA':
             total_entradas += valor
         else:
             total_saidas += valor
@@ -163,6 +163,11 @@ def atualizar_lista():
 
 
 # INCLUIR O LANCAMENTO
+import tkinter as tk
+from tkinter import ttk, messagebox
+from tkcalendar import DateEntry
+from datetime import date
+
 def incluir_lancamento():
     def salvar():
         tipo = var_tipo.get()
@@ -179,46 +184,37 @@ def incluir_lancamento():
         data_lanc = converter_data(entry_data_inicio.get())
         if not data_lanc:
             return
-        data_lanc = data_lanc.strftime('%Y-%m-%d')  # Ex: 2025-07-18
+        data_lanc = data_lanc.strftime('%Y-%m-%d')
         if not data_lanc:
-            return  # Evita salvar se a data for inválida
+            return
 
-        
-        
-        
-        
         inserir_lancamento(tipo, desc, valor, data_lanc, forma_pgto)
         top.destroy()
         atualizar_lista()
 
     def atualizar_cor(*args):
-        estilo = "Entrada.TCombobox" if var_tipo.get() == "Entrada" else "Saida.TCombobox"
+        estilo = "ENTRADA.TCombobox" if var_tipo.get() == "ENTRADA" else "SAÍDA.TCombobox"
         combo_tipo.configure(style=estilo)
 
     top = tk.Toplevel(root)
-    top.title("Novo Lançamento")
-    top.geometry("600x220")  # Aumenta altura para comportar novo campo
+    top.title("NOVO Lançamento de Caixa")
+    top.geometry("600x220")
     top.resizable(False, False)
     top.configure(bg="#2c2c2c")
 
     fonte = ('Segoe UI', 10)
-    
-    # Linha 0 - Código (desabilitado, apenas exibição)
-    #tk.Label(top, text="Código:", font=fonte, bg="#2c2c2c", fg="white").grid(row=0, column=0, padx=10, pady=5, sticky="e")
-    #entry_codigo = tk.Entry(top, width=15, state="disabled")
-    #entry_codigo.insert(0, "(gerado pelo banco)")
-    #entry_codigo.configure(state="disabled")
 
     # Linha 0 - Data
-    tk.Label(top, text="Data:", font=fonte, bg="#2c2c2c", fg="white").grid(row=0, column=1, padx=10, pady=5, sticky="e")
-    entry_data_inicio = DateEntry(frame_topo, width=12, background='darkblue', foreground='white',
-                              borderwidth=2, date_pattern='dd-mm-yyyy')
+    tk.Label(top, text="Data:", font=fonte, bg="#2c2c2c", fg="white").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+    entry_data_inicio = DateEntry(top, width=12, background='darkblue', foreground='white',
+                                  borderwidth=2, date_pattern='dd-mm-yyyy')
     entry_data_inicio.set_date(date.today())
+    entry_data_inicio.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
     # Linha 1 - Tipo e Forma de Pagamento
     tk.Label(top, text="Tipo:", font=fonte, bg="#2c2c2c", fg="white").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-    var_tipo = tk.StringVar(value="Entrada")
-    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["Entrada", "Saída"], state="readonly", width=15)
+    var_tipo = tk.StringVar(value="ENTRADA")
+    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["ENTRADA", "SAÍDA"], state="readonly", width=15)
     combo_tipo.grid(row=1, column=1, padx=5, pady=8, sticky="w")
     var_tipo.trace_add("write", atualizar_cor)
     atualizar_cor()
@@ -231,7 +227,7 @@ def incluir_lancamento():
     combo_pgto.grid(row=1, column=3, padx=5, pady=8, sticky="w")
     combo_pgto.set("DINHEIRO")
 
-    # Linha 2 - Descrição (campo largo)
+    # Linha 2 - Descrição
     tk.Label(top, text="Descrição:", font=fonte, bg="#2c2c2c", fg="white").grid(row=2, column=0, padx=10, pady=5, sticky="e")
     entry_desc = tk.Entry(top, width=70)
     entry_desc.grid(row=2, column=1, columnspan=3, padx=5, pady=5, sticky="w")
@@ -250,12 +246,13 @@ def incluir_lancamento():
     btn_salvar.pack(side="left", padx=10)
 
     btn_fechar = tk.Button(top, text="✖", command=top.destroy,
-                       bg="#444", fg="white", width=2, height=1,
-                       font=("Arial", 10, "bold"), bd=0, relief="flat")
+                           bg="#444", fg="white", width=2, height=1,
+                           font=("Arial", 10, "bold"), bd=0, relief="flat")
     btn_fechar.place(relx=1.0, x=-10, y=10, anchor="ne")
 
     top.bind('<Return>', lambda e: salvar())
     top.bind('<Escape>', lambda e: top.destroy())
+
 
 
 
@@ -305,11 +302,11 @@ def editar_lancamento():
         atualizar_lista()
 
     def atualizar_cor(*args):
-        estilo = "Entrada.TCombobox" if var_tipo.get() == "Entrada" else "Saida.TCombobox"
+        estilo = "Entrada.TCombobox" if var_tipo.get() == "ENTRADA" else "SAÍDA.TCombobox"
         combo_tipo.configure(style=estilo)
 
     top = tk.Toplevel(root)
-    top.title("Editar Lançamento")
+    top.title("EDITANDO Lançamento de Caixa")
     top.geometry("600x200")
     top.resizable(False, False)
     top.configure(bg="#2c2c2c")
@@ -319,7 +316,7 @@ def editar_lancamento():
     # Linha 1 - Tipo e Forma de Pagamento
     tk.Label(top, text="Tipo:", font=fonte, bg="#2c2c2c", fg="white").grid(row=0, column=0, padx=10, pady=8, sticky="e")
     var_tipo = tk.StringVar(value=tipo_atual)
-    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["Entrada", "Saída"], state="readonly", width=15)
+    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["ENTRADA", "SAÍDA"], state="readonly", width=15)
     combo_tipo.grid(row=0, column=1, padx=5, pady=8, sticky="w")
     var_tipo.trace_add("write", atualizar_cor)
     atualizar_cor()
@@ -384,6 +381,9 @@ def deletar_lancamento():
         excluir_lancamento(id_lanc)
         atualizar_lista()
 
+
+
+# GERANDO O RELATORIO EM PDF DO CAIXA
 def gerar_pdf():
     data_inicio = converter_data(entry_data_inicio.get())
     data_fim = converter_data(entry_data_fim.get())

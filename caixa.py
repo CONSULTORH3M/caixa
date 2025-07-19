@@ -51,7 +51,7 @@ def excluir_lancamento(id_lanc):
     conn.commit()
 
 def buscar_lancamentos(data_inicio, data_fim):
-    cursor.execute('SELECT id, tipo, descricao, valor FROM caixa WHERE data BETWEEN ? AND ? ORDER BY data',
+    cursor.execute('SELECT id, data, tipo, descricao, valor FROM caixa WHERE data BETWEEN ? AND ?',
                    (data_inicio, data_fim))
     return cursor.fetchall()
 
@@ -96,11 +96,14 @@ btn_fechar = tk.Button(frame_topo, text="✖", command=root.quit,
 btn_fechar.pack(side="left", anchor="w", padx=0)
 
 # Tabela
-columns = ('ID', 'Tipo', 'Descrição', 'Valor')
+columns = ('ID', "data",'Tipo', 'Descrição', 'Valor')
 tree = ttk.Treeview(root, columns=columns, show='headings')
 
 tree.heading('ID', text='ID')
 tree.column('ID', width=20, anchor='center')
+
+tree.heading('data', text='Data')
+tree.column('data', width=40, anchor='center')
 
 tree.heading('Tipo', text='Tipo')
 tree.column('Tipo', width=40, anchor='center')
@@ -146,9 +149,9 @@ def atualizar_lista():
     lancamentos = buscar_lancamentos(data_inicio, data_fim)
     total_entradas = total_saidas = 0
     for lanc in lancamentos:
-        id_lanc, tipo, desc, valor = lanc
-        tree.insert('', 'end', iid=id_lanc, values=(id_lanc, tipo, desc, f'R$ {valor:.2f}'))
-        if tipo == 'Entrada':
+        id_lanc, data_inicio, tipo, desc, valor = lanc
+        tree.insert('', 'end', iid=id_lanc, values=(id_lanc, data_inicio, tipo, desc, f'R$ {valor:.2f}'))
+        if tipo == 'ENTRADA':
             total_entradas += valor
         else:
             total_saidas += valor
@@ -193,11 +196,11 @@ def incluir_lancamento():
         atualizar_lista()
 
     def atualizar_cor(*args):
-        estilo = "Entrada.TCombobox" if var_tipo.get() == "Entrada" else "Saida.TCombobox"
+        estilo = "ENTRADA.TCombobox" if var_tipo.get() == "ENTRADA" else "SAÍDA.TCombobox"
         combo_tipo.configure(style=estilo)
 
     top = tk.Toplevel(root)
-    top.title("Novo Lançamento")
+    top.title("NOVO Lançamento de Caixa")
     top.geometry("600x220")
     top.resizable(False, False)
     top.configure(bg="#2c2c2c")
@@ -213,8 +216,8 @@ def incluir_lancamento():
 
     # Linha 1 - Tipo e Forma de Pagamento
     tk.Label(top, text="Tipo:", font=fonte, bg="#2c2c2c", fg="white").grid(row=1, column=0, padx=10, pady=8, sticky="e")
-    var_tipo = tk.StringVar(value="Entrada")
-    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["Entrada", "Saída"], state="readonly", width=15)
+    var_tipo = tk.StringVar(value="ENTRADA")
+    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["ENTRADA", "SAÍDA"], state="readonly", width=15)
     combo_tipo.grid(row=1, column=1, padx=5, pady=8, sticky="w")
     var_tipo.trace_add("write", atualizar_cor)
     atualizar_cor()
@@ -302,11 +305,11 @@ def editar_lancamento():
         atualizar_lista()
 
     def atualizar_cor(*args):
-        estilo = "Entrada.TCombobox" if var_tipo.get() == "Entrada" else "Saida.TCombobox"
+        estilo = "Entrada.TCombobox" if var_tipo.get() == "ENTRADA" else "SAÍDA.TCombobox"
         combo_tipo.configure(style=estilo)
 
     top = tk.Toplevel(root)
-    top.title("Editar Lançamento")
+    top.title("EDITANDO Lançamento de Caixa")
     top.geometry("600x200")
     top.resizable(False, False)
     top.configure(bg="#2c2c2c")
@@ -316,7 +319,7 @@ def editar_lancamento():
     # Linha 1 - Tipo e Forma de Pagamento
     tk.Label(top, text="Tipo:", font=fonte, bg="#2c2c2c", fg="white").grid(row=0, column=0, padx=10, pady=8, sticky="e")
     var_tipo = tk.StringVar(value=tipo_atual)
-    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["Entrada", "Saída"], state="readonly", width=15)
+    combo_tipo = ttk.Combobox(top, textvariable=var_tipo, values=["ENTRADA", "SAÍDA"], state="readonly", width=15)
     combo_tipo.grid(row=0, column=1, padx=5, pady=8, sticky="w")
     var_tipo.trace_add("write", atualizar_cor)
     atualizar_cor()
@@ -381,17 +384,14 @@ def deletar_lancamento():
         excluir_lancamento(id_lanc)
         atualizar_lista()
 
-def gerar_pdf():
-    data_inicio = converter_data(entry_data_inicio.get())
-    data_fim = converter_data(entry_data_fim.get())
-    lancamentos = buscar_lancamentos(data_inicio, data_fim)
-    if not lancamentos:
-        messagebox.showinfo("Relatório", "Nenhum lançamento encontrado para o período.")
-        return
 
+
+# GERANDO O RELATORIO EM PDF DO CAIXA
+def gerar_pdf():
     c = canvas.Canvas("relatorio_caixa.pdf", pagesize=A4)
     largura, altura = A4
     y = altura - 50
+
     c.setFont("Helvetica-Bold", 14)
     c.drawString(50, y, f"Relatório de Caixa: {entry_data_inicio.get()} a {entry_data_fim.get()}")
     y -= 30
@@ -399,8 +399,9 @@ def gerar_pdf():
     # Cabeçalhos
     c.setFont("Helvetica-Bold", 12)
     c.drawString(50, y, "ID")
-    c.drawString(90, y, "Descrição")
-    c.drawString(330, y, "Tipo")
+    c.drawString(85, y, "Data")
+    c.drawString(150, y, "Descrição")
+    c.drawString(380, y, "Tipo")
     c.drawRightString(500, y, "Valor (R$)")
     y -= 15
     c.line(50, y, 550, y)
@@ -409,16 +410,31 @@ def gerar_pdf():
     c.setFont("Helvetica", 11)
     total_entradas = total_saidas = 0
 
-    for id_lanc, tipo, descricao, valor in lancamentos:
-        c.drawString(50, y, str(id_lanc))  # ID
-        c.drawString(90, y, descricao[:35])  # Descrição com limite reduzido
-        c.drawString(330, y, tipo)
-        c.drawRightString(500, y, f"{valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    for item in tree.get_children():
+        valores = tree.item(item)["values"]
 
+        # Assumindo que as colunas estão nessa ordem na treeview:
+        # ID, Data, Descrição, Tipo, Valor
+        id_lanc = valores[0]
+        data_lanc = valores[1]
+        descricao = valores[3]
+        tipo = valores[2]
+        valor_str = valores[4]
+
+        # Converter valor de "R$ 123,45" para float
+        valor = float(valor_str.replace("R$", "").replace(".", "").replace(",", ".").strip())
+
+        # Soma valores
         if tipo == "Entrada":
             total_entradas += valor
         else:
             total_saidas += valor
+
+        c.drawString(50, y, str(id_lanc))
+        c.drawString(85, y, data_lanc)
+        c.drawString(150, y, descricao[:32])
+        c.drawString(380, y, tipo)
+        c.drawRightString(500, y, valor_str)
 
         y -= 20
         if y < 100:
@@ -429,13 +445,14 @@ def gerar_pdf():
     y -= 10
     c.setFont("Helvetica-Bold", 12)
     c.drawString(50, y, "Total Entradas:")
-    c.drawRightString(500, y, f"{total_entradas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    c.drawRightString(500, y, f"R$ {total_entradas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
     y -= 20
     c.drawString(50, y, "Total Saídas:")
-    c.drawRightString(500, y, f"{total_saidas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    c.drawRightString(500, y, f"R$ {total_saidas:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
     y -= 20
     c.drawString(50, y, "Saldo Geral:")
-    c.drawRightString(500, y, f"{(total_entradas - total_saidas):,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+    saldo = total_entradas - total_saidas
+    c.drawRightString(500, y, f"R$ {saldo:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
 
     c.save()
 
@@ -446,6 +463,8 @@ def gerar_pdf():
         os.system("open relatorio_caixa.pdf")
     else:
         os.system("xdg-open relatorio_caixa.pdf")
+
+
 
 
 
